@@ -5,17 +5,10 @@ import json
 
 try:
    import citations_for_data.crossref_client as crossref_client
+   from citations_for_data.utils import clean_identifier as clean_identifier
 except:
    import crossref_client
-
-
-def clean_identifier(identifier):
-   identifier = identifier.strip()
-   if 'https://doi.org/' in identifier:
-      identifier = identifier.replace('https://doi.org/', '')
-   if identifier[:4] == 'doi:':
-      identifier = identifier[4:]
-   return identifier
+   from utils import clean_identifier as clean_identifier
 
 
 def add_citations_from_relationships(relationships_child, citation_type, citations_list):
@@ -45,6 +38,20 @@ def add_citations_from_relationships(relationships_child, citation_type, citatio
             citations_list.append(citation)
 
 
+def remove_published_preprints(citations):
+   result = []
+   preprints = []   
+   for citation in citations:
+      for preprint in citation['preprints']:
+         preprints.append(preprint)
+
+   for citation in citations:
+      if citation['identifier'] not in preprints:
+         result.append(citation)
+
+   return result
+
+
 def get_citations_for_doi(doi):
    """Returns a list of citations for a given DOI.
 
@@ -53,7 +60,7 @@ def get_citations_for_doi(doi):
 
    Returns:
       list: A list of citations represented as a dictionary for the given DOI, e.g., 
-      [{'identifier': '10.123/abc', 'identifier_type': 'DOI', 'citation': 'citation text', 'type': 'IsCitedBy'}, ...]
+      [{'identifier': '10.123/abc', 'identifier_type': 'DOI', 'citation': 'citation text', 'type': 'IsCitedBy', 'crossref_data': some_data}, ...]
    """
    citations = []  # list of citations, where each citation is a dictionary
    url = 'https://api.datacite.org/dois/' + doi
@@ -88,22 +95,27 @@ def get_citations_for_doi(doi):
 
       # For each citation, get the author, title, and year to build citation text
       for citation in citations:
+         citation['crossref_data'] = None
          if citation['identifier_type'] == 'DOI':
             try:
                crossref_citation = crossref_client.get_citation_for_doi(citation['identifier'])
                citation['citation'] = crossref_citation['citation']
+               citation['preprints'] = crossref_citation['preprints']
             except Exception as e:
                print(e)
                citation['citation'] = ''
          else:
             citation['citation'] = ''
+
+      # Remove published preprints
+      citations = remove_published_preprints(citations)
       return citations
    else:
       raise Exception('Error: ' + str(response.status_code))
 
 
 if __name__ == '__main__':
-   #citations = get_citations_for_doi('10.6073/pasta/e0e71c2d59bf7b08928061f546be6a9a') # ble.3.1
-   citations = get_citations_for_doi('10.6073/pasta/bb7d76017b8a8534c4960346705bcb77') # ble.5.2
+   citations = get_citations_for_doi('10.6073/pasta/e0e71c2d59bf7b08928061f546be6a9a') # ble.3.1
+   #citations = get_citations_for_doi('10.6073/pasta/bb7d76017b8a8534c4960346705bcb77') # ble.5.2
    for citation in citations:
       print(citation)

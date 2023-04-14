@@ -1,7 +1,20 @@
 import requests
 
+try:
+   from citations_for_data.utils import clean_identifier as clean_identifier
+except:
+   from utils import clean_identifier as clean_identifier
+
 
 def get_citation_for_doi(doi):
+   """Returns a citation for a given DOI.
+   
+   Args:
+      doi (str): The DOI to retrieve a citation for, e.g., 10.6073/pasta/abc123
+
+   Returns:
+      dict: A citation represented as a dictionary for the given DOI        
+   """
    url = f'https://api.crossref.org/works/{doi}'
    response = requests.get(url)
 
@@ -24,6 +37,15 @@ def get_citation_for_doi(doi):
       citation['title'] = data['title'][0]
       citation['year'] = data['created']['date-parts'][0][0]
       citation['citation'] = f'{citation["authors"]} ({citation["year"]}). {citation["title"]}. doi:{citation["doi"]}'
+
+      # Add preprint if present, to help spot them later if the client wants to filter out preprints
+      preprints = []
+      if 'relation' in data:
+         if 'has-preprint' in data['relation']:
+            for preprint in data['relation']['has-preprint']:
+               if 'id' in preprint:
+                  preprints.append(clean_identifier(preprint['id']))
+      citation['preprints'] = preprints
    else:
       raise Exception(f'Error: {response.status_code} {response.reason}')
    return citation

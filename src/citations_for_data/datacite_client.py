@@ -1,7 +1,9 @@
 """Retrieve citations from DataCite REST API."""
 
-import requests
 import json
+
+import requests
+
 
 try:
    import citations_for_data.crossref_client as crossref_client

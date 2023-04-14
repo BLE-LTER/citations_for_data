@@ -2,6 +2,10 @@
 
 Code for getting data citations
 
+Required Packages:
+
+* requests
+
 ## Intro
 
 The goal is to get a list of data citations for a given dataset, where each citation is a paper or some other work that cites or references the data.

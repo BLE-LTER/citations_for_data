@@ -44,6 +44,27 @@ for package_id in meta.keys():  # The keys are the package IDs
          row = [SCOPE, package_id, item['revision'], item['pubDate'], item['title'], item['creator'], item['doi'], citation['citation']]
          rows.append(row)
 
+# Get citations for datasets that are not in EDI, but for which we have a DOI
+# I would read these in from a table. But here's a simple example with only one item in the list.
+datasets = [
+   {'scope': 'knb-lter-ble', 
+    'package_id': 'n/a', 
+    'revision': 'n/a', 
+    'pubDate': '2021', 
+    'title': 'Some Model Data', 
+    'creator': 'Rawlins, M.', 
+    'doi': '10.6073/pasta/a49b3da18b4c83d6ff69d9d878bb7dc3'},
+]
+
+print('Getting citations for standalone DOIs...')
+for d in datasets:
+   print('   Getting citations for ' + d['doi'] + '...')
+   citations = datacite_client.get_citations_for_doi(d['doi'])
+   for citation in citations:
+      # For each citation, add a row to the CSV file
+      row = [d['scope'], d['package_id'], d['revision'], d['pubDate'], d['title'], d['creator'], d['doi'], citation['citation']]
+      rows.append(row)
+
 # Write the citations to a CSV file
 with open(OUT_CSV, 'w', newline='') as csvfile:
    writer = csv.writer(csvfile)

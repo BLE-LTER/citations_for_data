@@ -79,6 +79,9 @@ def get_citations_for_doi(doi):
                      citation = {}
                      citation['identifier'] = clean_identifier(item['relatedIdentifier'])
                      if 'relationType' in item:
+                        if item['relationType'] == 'IsIdenticalTo':
+                           # Skip this citation
+                           continue
                         citation['type'] = item['relationType']
                      else:
                         citation['type'] = 'Unknown'
